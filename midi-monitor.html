@@ -8,6 +8,7 @@
   body { font-family: monospace; background: #111; color: #0f0; margin: 0; padding: 16px; }
   h1 { font-size: 1.2rem; margin: 0 0 12px; color: #fff; }
   select { font-family: monospace; background: #222; color: #fff; border: 1px solid #555; padding: 4px; }
+  #held { margin: 8px 0; padding: 8px; background: #222; font-size: 1.3rem; min-height: 1.6rem; }
   #log { white-space: pre-wrap; word-break: break-all; }
   .msg { padding: 2px 0; }
   .note-on { color: #0f0; }
@@ -20,6 +21,7 @@
 <h1>MIDI Monitor</h1>
 <select id="portSelect"><option>— no devices —</option></select>
 <button id="clear">clear</button>
+<div id="held"></div>
 <div id="log"></div>
 
 <script>
@@ -29,8 +31,21 @@ const clear = document.getElementById('clear');
 
 let access = null;
 let connectedPort = null;
+const heldNotes = new Set();
+const heldEl = document.getElementById('held');
 
-clear.onclick = () => log.innerHTML = '';
+const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+
+function noteName(n) {
+  return NOTE_NAMES[n % 12] + (Math.floor(n / 12) - 1);
+}
+
+function renderHeld() {
+  if (heldNotes.size === 0) { heldEl.textContent = ''; return; }
+  heldEl.textContent = Array.from(heldNotes).sort((a, b) => a - b).map(n => `${n} (${noteName(n)})`).join('  ');
+}
+
+clear.onclick = () => { log.innerHTML = ''; };
 
 function midiMsgToString(data) {
   const status = data[0];
@@ -48,6 +63,9 @@ function midiMsgToString(data) {
 function onMidiMessage(e) {
   const [cls, text] = midiMsgToString(Array.from(e.data));
   if (cls === 'other') return;
+  if (cls === 'note-on') heldNotes.add(e.data[1]);
+  if (cls === 'note-off') heldNotes.delete(e.data[1]);
+  renderHeld();
   const div = document.createElement('div');
   div.className = `msg ${cls}`;
   const t = new Date().toLocaleTimeString();
