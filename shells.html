@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shells</title>
+<style>
+  body { font-family: monospace; background: #111; color: #fff; margin: 0; padding: 16px; }
+  h1 { font-size: 1.2rem; margin: 0 0 12px; }
+  select { font-family: monospace; background: #222; color: #fff; border: 1px solid #555; padding: 4px; }
+  #held { margin: 8px 0; padding: 8px; background: #222; font-size: 1rem; min-height: 1.2rem; }
+  #chord { font-size: 4rem; text-align: center; padding: 32px; color: #4af; min-height: 5rem; }
+</style>
+</head>
+<body>
+<h1>Shells</h1>
+<select id="portSelect"><option>— no devices —</option></select>
+<div id="held"></div>
+<div id="chord"></div>
+
+<script src="midi.js"></script>
+<script src="chords.js"></script>
+<script src="shells-ui.js"></script>
+</body>
+</html>
