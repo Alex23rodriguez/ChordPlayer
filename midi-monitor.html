@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MIDI Monitor</title>
+<style>
+  body { font-family: monospace; background: #111; color: #0f0; margin: 0; padding: 16px; }
+  h1 { font-size: 1.2rem; margin: 0 0 12px; color: #fff; }
+  select { font-family: monospace; background: #222; color: #fff; border: 1px solid #555; padding: 4px; }
+  #log { white-space: pre-wrap; word-break: break-all; }
+  .msg { padding: 2px 0; }
+  .note-on { color: #0f0; }
+  .note-off { color: #f00; }
+  .cc { color: #ff0; }
+  .other { color: #888; }
+</style>
+</head>
+<body>
+<h1>MIDI Monitor</h1>
+<select id="portSelect"><option>— no devices —</option></select>
+<button id="clear">clear</button>
+<div id="log"></div>
+
+<script>
+const portSelect = document.getElementById('portSelect');
+const log = document.getElementById('log');
+const clear = document.getElementById('clear');
+
+let access = null;
+let connectedPort = null;
+
+clear.onclick = () => log.innerHTML = '';
+
+function midiMsgToString(data) {
+  const status = data[0];
+  const msgType = status & 0xf0;
+  const channel = (status & 0x0f) + 1;
+  const b1 = data[1];
+  const b2 = data[2];
+
+  if (msgType === 0x90 && b2 > 0) return [`note-on`, `ch ${channel} note ${b1} vel ${b2}`];
+  if (msgType === 0x80 || (msgType === 0x90 && b2 === 0)) return [`note-off`, `ch ${channel} note ${b1} vel ${b2}`];
+  if (msgType === 0xb0) return [`cc`, `ch ${channel} cc ${b1} val ${b2}`];
+  return [`other`, `[${data.join(', ')}]`];
+}
+
+function onMidiMessage(e) {
+  const [cls, text] = midiMsgToString(Array.from(e.data));
+  if (cls === 'other') return;
+  const div = document.createElement('div');
+  div.className = `msg ${cls}`;
+  const t = new Date().toLocaleTimeString();
+  div.textContent = `${t}  ${text}`;
+  log.prepend(div);
+  if (log.children.length > 100) log.lastChild.remove();
+}
+
+async function connectPort(port) {
+  if (connectedPort) connectedPort.onmidimessage = null;
+  connectedPort = port;
+  if (port) port.onmidimessage = onMidiMessage;
+}
+
+async function refreshPorts() {
+  if (!access) return;
+  const inputs = Array.from(access.inputs.values());
+  portSelect.innerHTML = '';
+  if (inputs.length === 0) {
+    portSelect.innerHTML = '<option>— no devices —</option>';
+    return;
+  }
+  for (const input of inputs) {
+    const opt = document.createElement('option');
+    opt.value = input.id;
+    opt.textContent = input.name || input.id;
+    portSelect.appendChild(opt);
+  }
+  const selected = inputs.find(i => i.id === portSelect.value) || inputs[0];
+  portSelect.value = selected.id;
+  connectPort(selected);
+}
+
+portSelect.onchange = () => {
+  const input = access?.inputs.get(portSelect.value);
+  connectPort(input || null);
+};
+
+navigator.requestMIDIAccess().then(a => {
+  access = a;
+  refreshPorts();
+  a.onstatechange = () => {
+    refreshPorts();
+    if (portSelect.value && access.inputs.get(portSelect.value)) return;
+    const first = Array.from(access.inputs.values())[0];
+    if (first) { portSelect.value = first.id; connectPort(first); }
+  };
+}).catch(() => {
+  log.textContent = 'MIDI not supported in this browser.';
+});
+</script>
+</body>
+</html>
