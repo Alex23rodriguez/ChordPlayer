@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Virtual Piano</title>
+<style>
+  body { font-family: monospace; background: #111; color: #fff; margin: 0; padding: 16px; }
+  h1 { font-size: 1.2rem; margin: 0 0 12px; }
+  select { font-family: monospace; background: #222; color: #fff; border: 1px solid #555; padding: 4px; margin-bottom: 12px; }
+  #piano { overflow-x: auto; padding-bottom: 8px; }
+  [data-note].pressed { fill: #4af !important; }
+  [data-note]:not(.pressed) { transition: fill .1s; }
+</style>
+</head>
+<body>
+<h1>Virtual Piano</h1>
+<select id="portSelect"><option>— no devices —</option></select>
+<div id="piano"></div>
+
+<script src="midi.js"></script>
+<script src="piano.js"></script>
+</body>
+</html>
