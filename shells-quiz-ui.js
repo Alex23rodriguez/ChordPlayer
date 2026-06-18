@@ -21,8 +21,11 @@ function pick(arr) {
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const staffContainer = document.getElementById('staffContainer');
+const PC2LI = [0,0,1,1,2,3,3,4,4,5,5,6];
+const LI_PC = [0,2,4,5,7,9,11];
+const ACC_SYMBOLS = { sharp: '\u266F', flat: '\u266D' };
 
-function renderStaff(note) {
+function renderStaff(note, label) {
   staffContainer.innerHTML = '';
   const svg = document.createElementNS(SVG_NS, 'svg');
   svg.setAttribute('width', '100%');
@@ -38,8 +41,7 @@ function renderStaff(note) {
   const ml = 80;
   const mr = 40;
 
-  const pc2li = [0,0,1,1,2,3,3,4,4,5,5,6];
-  const letterIdx = pc2li[note % 12];
+  const letterIdx = PC2LI[note % 12];
   const octave = Math.floor(note / 12) - 1;
   const noteIdx = octave * 7 + letterIdx;
   const bottomNoteIdx = 30;
@@ -85,6 +87,15 @@ function renderStaff(note) {
     }
   }
 
+  const pc = note % 12;
+  const li = PC2LI[pc];
+  const natPC = LI_PC[li];
+  let acc = null;
+  if (pc !== natPC) {
+    const diff = (pc - natPC + 12) % 12;
+    acc = diff <= 6 ? ACC_SYMBOLS.sharp : ACC_SYMBOLS.flat;
+  }
+
   const g = document.createElementNS(SVG_NS, 'g');
   g.setAttribute('transform', `rotate(-15, ${cx}, ${noteY})`);
   const e = document.createElementNS(SVG_NS, 'ellipse');
@@ -95,6 +106,32 @@ function renderStaff(note) {
   e.setAttribute('fill', '#fff');
   g.appendChild(e);
   svg.appendChild(g);
+
+  if (acc) {
+    const a = document.createElementNS(SVG_NS, 'text');
+    a.setAttribute('x', cx - 28);
+    a.setAttribute('y', noteY + 2);
+    a.setAttribute('font-size', '36');
+    a.setAttribute('fill', '#fff');
+    a.setAttribute('font-family', 'serif');
+    a.setAttribute('text-anchor', 'end');
+    a.setAttribute('dominant-baseline', 'central');
+    a.textContent = acc;
+    svg.appendChild(a);
+  }
+
+  if (label && document.getElementById('showLabel').checked) {
+    const l = document.createElementNS(SVG_NS, 'text');
+    l.setAttribute('x', cx + 28);
+    l.setAttribute('y', noteY + 2);
+    l.setAttribute('font-size', '22');
+    l.setAttribute('fill', '#888');
+    l.setAttribute('font-family', 'serif');
+    l.setAttribute('text-anchor', 'start');
+    l.setAttribute('dominant-baseline', 'central');
+    l.textContent = label;
+    svg.appendChild(l);
+  }
 
   const clef = document.createElementNS(SVG_NS, 'text');
   clef.setAttribute('x', '16');
@@ -109,9 +146,14 @@ function renderStaff(note) {
 function newQuestion() {
   targetRoot = pick(ROOTS);
   targetType = pick(TYPES);
+  const showThird = Math.random() < 0.5;
+  const interval = showThird
+    ? (targetType === 'm7' ? 3 : 4)
+    : (targetType === 'M7' ? 11 : 10);
+  const displayNote = targetRoot + interval;
   promptEl.textContent = `${MIDI.NOTE_NAMES[targetRoot % 12]}${targetType}`;
   resultEl.textContent = '';
-  renderStaff(targetRoot);
+  renderStaff(displayNote, showThird ? '3' : '7');
 }
 
 function render() {
